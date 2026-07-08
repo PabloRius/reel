@@ -9,6 +9,7 @@ import { MovieCard } from "@/components/room/MovieCard";
 import { AddMovieDialog } from "@/components/room/AddMovieDialog";
 import { FiltersBar } from "@/components/room/FiltersBar";
 import { PickerModal } from "@/components/room/PickerModal";
+import { TrailerModal } from "@/components/room/TrailerModal";
 import { useAuth } from "@/context/AuthContext";
 import {
   deleteRoom,
@@ -36,6 +37,7 @@ function RoomView() {
   const [winner, setWinner] = useState<RoomMovie | null>(null);
   const [candidates, setCandidates] = useState<RoomMovie[]>([]);
   const [pickCount, setPickCount] = useState(0);
+  const [trailerFor, setTrailerFor] = useState<RoomMovie | null>(null);
   const [copied, setCopied] = useState(false);
   const [noMatch, setNoMatch] = useState(false);
 
@@ -269,15 +271,31 @@ function RoomView() {
             + Añadir la primera
           </button>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="glass rounded-3xl p-12 text-center mt-4">
+          <div className="text-5xl mb-4">🔍</div>
+          <h3 className="text-xl font-bold mb-2">Nada coincide con los filtros</h3>
+          <p className="text-muted mb-6 max-w-sm mx-auto">
+            Hay {movies.length} en la lista, pero ninguna cumple los filtros
+            actuales. Prueba a relajarlos.
+          </p>
+          <button
+            onClick={() => setFilters(defaultFilters)}
+            className="btn-gradient text-white font-semibold px-6 py-3 rounded-full"
+          >
+            Limpiar filtros
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <AnimatePresence>
-            {movies.map((m) => (
+            {filtered.map((m) => (
               <MovieCard
                 key={m.id}
                 movie={m}
                 onRemove={() => removeMovie(roomId, m.id)}
                 onToggleWatched={() => toggleWatched(roomId, m.id, !m.watched)}
+                onOpenTrailer={() => setTrailerFor(m)}
               />
             ))}
           </AnimatePresence>
@@ -315,6 +333,15 @@ function RoomView() {
               await toggleWatched(roomId, winner.id, true);
               setWinner(null);
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {trailerFor && (
+          <TrailerModal
+            movie={trailerFor}
+            onClose={() => setTrailerFor(null)}
           />
         )}
       </AnimatePresence>

@@ -10,10 +10,12 @@ export function MovieCard({
   movie,
   onRemove,
   onToggleWatched,
+  onOpenTrailer,
 }: {
   movie: RoomMovie;
   onRemove: () => void;
   onToggleWatched: () => void;
+  onOpenTrailer: () => void;
 }) {
   const poster = posterUrl(movie.posterPath, "w342");
   const runtime = formatRuntime(movie.runtime);
@@ -25,7 +27,16 @@ export function MovieCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.92 }}
       transition={{ duration: 0.25 }}
-      className="group relative rounded-2xl overflow-hidden glass"
+      onClick={onOpenTrailer}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpenTrailer();
+        }
+      }}
+      className="group relative rounded-2xl overflow-hidden glass cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       <div className="relative aspect-[2/3] bg-surface-2">
         {poster ? (
@@ -39,6 +50,13 @@ export function MovieCard({
         ) : (
           <div className="grid place-items-center h-full text-4xl">🎞️</div>
         )}
+
+        {/* Indicador de reproducción (aparece al hacer hover) */}
+        <div className="absolute inset-0 grid place-items-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+          <span className="grid place-items-center w-14 h-14 rounded-full bg-black/50 backdrop-blur text-2xl border border-white/20">
+            ▶
+          </span>
+        </div>
 
         <span className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wide bg-black/60 backdrop-blur px-2 py-1 rounded-full">
           {mediaTypeLabel(movie.mediaType)}
@@ -59,14 +77,20 @@ export function MovieCard({
         {/* Acciones al hacer hover */}
         <div className="absolute inset-0 flex items-end justify-center gap-2 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition">
           <button
-            onClick={onToggleWatched}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleWatched();
+            }}
             title={movie.watched ? "Marcar como no vista" : "Marcar como vista"}
             className="text-xs font-medium bg-white/15 hover:bg-white/25 backdrop-blur px-3 py-1.5 rounded-full transition"
           >
             {movie.watched ? "↩ No vista" : "✓ Vista"}
           </button>
           <button
-            onClick={onRemove}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
             title="Quitar de la sala"
             className="text-xs font-medium bg-red-500/70 hover:bg-red-500 px-3 py-1.5 rounded-full transition"
           >

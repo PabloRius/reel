@@ -22,6 +22,13 @@ export interface Genre {
   name: string;
 }
 
+/** Vídeo (tráiler/teaser) de YouTube asociado a una película o serie. */
+export interface Trailer {
+  key: string; // id del vídeo de YouTube
+  name: string;
+  site: string; // normalmente "YouTube"
+}
+
 /** Miembro de una sala. */
 export interface RoomMember {
   uid: string;

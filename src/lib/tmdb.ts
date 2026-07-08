@@ -1,5 +1,5 @@
 import "server-only";
-import type { Genre, MediaResult, MediaType } from "@/lib/types";
+import type { Genre, MediaResult, MediaType, Trailer } from "@/lib/types";
 
 /**
  * Cliente TMDB del lado servidor. La clave (TMDB_ACCESS_TOKEN) NUNCA se envía
@@ -101,6 +101,52 @@ export async function getDetails(
 ): Promise<MediaResult | null> {
   const raw = await tmdbFetch<RawMedia>(`/${mediaType}/${id}`);
   return normalize(raw, mediaType);
+}
+
+interface RawVideo {
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+  iso_639_1: string;
+}
+
+/**
+ * Devuelve el mejor tráiler de YouTube para una peli/serie, priorizando:
+ * tipo Trailer > Teaser, oficial, y en español si existe (con respaldo en
+ * cualquier idioma). `null` si no hay ninguno.
+ */
+export async function getTrailer(
+  mediaType: MediaType,
+  id: number,
+): Promise<Trailer | null> {
+  // Pedimos en español e inglés y combinamos para maximizar resultados.
+  const [es, en] = await Promise.all([
+    tmdbFetch<{ results: RawVideo[] }>(`/${mediaType}/${id}/videos`, {
+      language: "es-ES",
+    }),
+    tmdbFetch<{ results: RawVideo[] }>(`/${mediaType}/${id}/videos`, {
+      language: "en-US",
+    }),
+  ]);
+
+  const videos = [...es.results, ...en.results].filter(
+    (v) => v.site === "YouTube",
+  );
+  if (videos.length === 0) return null;
+
+  const score = (v: RawVideo) => {
+    let s = 0;
+    if (v.type === "Trailer") s += 100;
+    else if (v.type === "Teaser") s += 50;
+    if (v.official) s += 20;
+    if (v.iso_639_1 === "es") s += 10;
+    return s;
+  };
+
+  const best = videos.sort((a, b) => score(b) - score(a))[0];
+  return { key: best.key, name: best.name, site: best.site };
 }
 
 /** Lista de géneros combinada de cine y TV. */
